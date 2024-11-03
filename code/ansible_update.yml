@@ -1,0 +1,55 @@
+---
+# Author: Richard Chamberlain
+# Company: Sebos Technology
+# Description: Playbook to update servers in the home lab environment, handling updates across different OS families.
+
+- name: Update servers in my home lab
+  hosts: all
+  become: root
+  become: yes
+  remote_user: ansible_admin
+
+  tasks:
+    # Task to update RedHat family servers (RHEL, CentOS, Rocky, Oracle)
+    - name: Update RHEL family servers, including RHEL, CentOS, Rocky, Oracle...
+      yum:
+        name: '*'                   # Update all packages
+        security: yes               # Apply security updates
+        state: latest               # Ensure packages are at their latest version
+      when: ansible_facts['os_family'] == 'RedHat'  # Run only on RedHat family systems
+
+    # Task to update Debian family servers by refreshing package cache
+    - name: Update Debian family servers
+      apt:
+        update_cache: yes           # Refresh the APT package cache
+      when: ansible_facts['os_family'] == 'Debian'  # Run only on Debian family systems
+
+    # Block to handle updates for OPNsense (FreeBSD-based system)
+    - block:
+        # Task to check for available updates on OPNsense
+        - name: Check for updates on OPNsense
+          ansible.builtin.shell: "opnsense-update -c"
+          register: update_check     # Register output for conditional check
+          changed_when: false        # Mark as not changed (no need to record as a change)
+          ignore_errors: true        # Continue playbook if this command fails
+
+        # Task to apply updates if updates are available
+        - name: Update OPNsense if updates are available
+          ansible.builtin.shell: "opnsense-update -u && opnsense-update -bk"
+          when:
+            - ansible_facts['os_family'] == 'FreeBSD'  # Run only on FreeBSD systems (OPNsense)
+            - update_check.stdout != ""                # Ensure updates are available before proceeding
+          register: update_result                      # Register result for reboot condition
+
+        # Task to reboot OPNsense after updates
+        - name: Reboot OPNsense to apply updates
+          ansible.builtin.shell: "reboot"
+          async: 1                                     # Run asynchronously to allow reboot
+          poll: 0                                      # Detach from task immediately
+          when:
+            - ansible_facts['os_family'] == 'FreeBSD'  # Run only on FreeBSD systems (OPNsense)
+            - update_result is defined                 # Ensure update task has a result
+            - update_check.stdout != ""                # Check if updates were available
+          ignore_errors: true                          # Continue playbook if reboot task fails
+
+      when: ansible_facts['os_family'] == 'FreeBSD'    # Apply this block only on FreeBSD systems

@@ -1,0 +1,16 @@
+# ================================================
+# Timer Unit File for Ansible Playbook Execution
+# Company: Sebos Technology
+# Date: 2024-11-03
+# Description: Triggers ansible-dev-inventory.service daily at 3:00 AM
+# ================================================
+
+[Unit]
+Description=Timer to run Ansible Playbook for Dev Environment every day at 3:00 AM
+
+[Timer]
+OnCalendar=*-*-* 15:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,19 @@
+# ================================================
+# Service Unit File for Running Ansible Playbook
+# Company: Sebos Technology
+# Date: 2024-11-03
+# Description: Executes Ansible playbook for the "dev" environment daily
+# ================================================
+
+[Unit]
+Description=Run Ansible Playbook for Dev Environment
+
+[Service]
+Type=oneshot
+User=ansible_admin
+Environment="SERVER_ENVIRONMENT=dev"
+WorkingDirectory= /home/ansible_admin/articles/ansible_riskbase
+ExecStart=/usr/bin/ansible-playbook /home/ansible_admin/articles/ansible_riskbase/ansible_update.yml
+
+[Install]
+WantedBy=multi-user.target
